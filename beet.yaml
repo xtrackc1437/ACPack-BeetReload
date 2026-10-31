@@ -1,0 +1,15 @@
+name: ACPack
+author: AreoCraft Developers
+version: "1.0.8.4"
+description: Datapack designed for Areocraft Server, Version 1.0.8.4, Targeting MC 26.3.
+output: build
+
+# 目标包格式（26.3 -> [121, 0]）。管线最后会用 finalize 插件写出与原包逐字段一致的 mcmeta。
+data_pack:
+  name: ACPack
+  pack_format: 121
+
+pipeline:
+  - acpack.pipeline.build
+  - mecha
+  - acpack.pipeline.finalize

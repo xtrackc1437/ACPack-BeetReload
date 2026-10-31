@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "acpack"
+version = "1.0.8.4"
+description = "ACPack 数据包的 beet 工程（Python 重写版）"
+requires-python = ">=3.14"
+dependencies = ["beet==0.121.2", "mecha>=0.107.0"]
+
+[tool.setuptools.packages.find]
+include = ["acpack*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", "tools"]
