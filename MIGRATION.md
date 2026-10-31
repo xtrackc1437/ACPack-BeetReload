@@ -434,6 +434,10 @@ python tools/parity.py --diff    # 差异报告（可读 diff）
 pytest                           # 断言差异集合 == 本文档列出的 10 项
 ```
 
+基准包为仓库根目录的 `original.zip`（迁移前 mcfunction 版的标准数据包压缩包，
+根内含 `pack.mcmeta` 与 `data/`）。`tools/parity.py` 同时支持 `.zip` 与解包目录，
+可用 `--original` 或环境变量 `ACPACK_ORIGINAL` 覆盖默认位置。
+
 比较口径：
 
 1. **函数**：逐行去注释/空行 → mecha 解析成 AST → 重新序列化 → JSON 组件键排序 → 比较指令序列；

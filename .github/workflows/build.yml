@@ -1,0 +1,79 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build & test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e . pytest
+
+      - name: Build data pack
+        run: beet build
+
+      - name: Check output layout
+        run: |
+          set -euo pipefail
+
+          for path in \
+            build/ACPack/pack.mcmeta \
+            build/ACPack/data/ac/function/load.mcfunction \
+            build/ACPack/data/statistics/function/load.mcfunction \
+            build/ACPack/data/minecraft/tags/function/load.json \
+            build/ACPack/data/minecraft/loot_table/gameplay/piglin_bartering.json \
+            build/ACPack/data/statistics/advancement/place.json
+          do
+            test -f "$path" || { echo "缺少产物：$path"; exit 1; }
+          done
+
+          python - <<'PY'
+          import json
+          import pathlib
+
+          pack = json.loads(pathlib.Path("build/ACPack/pack.mcmeta").read_text(encoding="utf-8"))["pack"]
+          assert pack["min_format"] == [121, 0], pack
+          assert pack["max_format"] == [121, 0], pack
+          assert "26.3" in pack["description"], pack
+
+          functions = list(pathlib.Path("build/ACPack/data").rglob("*.mcfunction"))
+          assert len(functions) == 57, f"函数数量异常：{len(functions)}"
+          print(f"pack.mcmeta ok / {len(functions)} functions")
+          PY
+
+      - name: Run tests
+        run: python -m pytest -q
+
+      - name: Upload data pack
+        uses: actions/upload-artifact@v4
+        with:
+          name: ACPack-datapack
+          path: build/ACPack
+          if-no-files-found: error
+          retention-days: 14

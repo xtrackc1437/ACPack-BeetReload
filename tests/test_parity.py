@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-import json
 import subprocess
 import sys
 from pathlib import Path
@@ -16,10 +15,21 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-ORIGINAL = ROOT.parent
 sys.path.insert(0, str(ROOT / "tools"))
 
 import parity  # noqa: E402
+
+# 基准包默认取仓库根目录的 original.zip（标准数据包压缩包）。
+# 也可用 --original 之外的 ACPACK_ORIGINAL 指定 zip 或解包目录；
+# 独立仓库 / CI 环境下若没有放入基准包，本文件整体跳过。
+ORIGINAL = parity.resolve_original()
+if ORIGINAL is None or not ORIGINAL.exists():
+    candidates = "、".join(str(path) for path in parity.candidate_origins())
+    pytest.skip(
+        f"未找到原始数据包（当前指向 {ORIGINAL}），跳过对拍测试；"
+        f"请把标准数据包放到：{candidates}",
+        allow_module_level=True,
+    )
 
 # 迁移中有意修正的函数（详见 MIGRATION.md）
 EXPECTED_CHANGED = {
@@ -76,8 +86,8 @@ def test_content_documents_identical(report: dict) -> None:
 
 
 def test_pack_mcmeta(built: Path) -> None:
-    original = json.loads((ORIGINAL / "pack.mcmeta").read_text(encoding="utf-8"))["pack"]
-    current = json.loads((built / "pack.mcmeta").read_text(encoding="utf-8"))["pack"]
+    original = parity.read_mcmeta(ORIGINAL)["pack"]
+    current = parity.read_mcmeta(built)["pack"]
 
     assert current["min_format"] == original["min_format"]
     assert current["max_format"] == original["max_format"]
